@@ -5,6 +5,7 @@
     "deploy": "pnpm build && pnpm package"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1075.0",
     "@aws-sdk/client-sns": "^3.1048.0"
   },
   "devDependencies": {

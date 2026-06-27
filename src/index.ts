@@ -1,10 +1,9 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import type { SNSEvent } from "aws-lambda";
 import { NotificationPayload } from "./types";
-
-const sns = new SNSClient({
-  region: process.env.C_AWS_SNS_REGION,
-});
+import { sns } from "./clients";
+import { sendSMS } from "./services/sms";
+import { sendEmail } from "./services/email";
 
 export const handler = async (event: SNSEvent) => {
   try {
@@ -13,27 +12,20 @@ export const handler = async (event: SNSEvent) => {
 
       switch (payload.channel) {
         case "SMS":
-          await sns.send(
-            new PublishCommand({
-              PhoneNumber: payload.phoneNumber as string,
-              Message: payload.message,
-              MessageAttributes: {
-                "AWS.SNS.SMS.SMSType": {
-                  DataType: "String",
-                  StringValue: "Transactional",
-                },
-              },
-            }),
-          );
+          await sendSMS(payload.phoneNumber, payload.message);
           break;
         case "EMAIL":
-          console.log(`Sending email to ${payload.email}`);
+          await sendEmail(payload.email, payload.subject, payload.message);
           break;
         case "WHATSAPP":
           console.log(`Sending WhatsApp message to ${payload.phoneNumber}`);
           break;
-        default:
-          throw new Error(`Unsupported channel: ${payload.channel}`);
+        default: {
+          const exhaustiveCheck: never = payload;
+          throw new Error(
+            `Unhandled notification payload: ${JSON.stringify(exhaustiveCheck)}`,
+          );
+        }
       }
     }
 
